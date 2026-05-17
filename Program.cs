@@ -1,10 +1,14 @@
 
+using BaseApi.Configurations;
 using BaseApi.Data;
 using BaseApi.Repositories.Implementations;
 using BaseApi.Repositories.Interfaces;
 using BaseApi.Services.Implementations;
 using BaseApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace BaseApi
 {
@@ -29,11 +33,47 @@ namespace BaseApi
                 ));
 
 
+            // Bind JwtSettings from appsettings.json
+            builder.Services.Configure<JwtSettings>(
+                builder.Configuration.GetSection("JwtSettings"));
+
+            // Read JwtSettings
+            var jwtSettings = builder.Configuration
+                .GetSection("JwtSettings")
+                .Get<JwtSettings>()!;
+
+            // Configure JWT Authentication
+            builder.Services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters =
+                        new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+
+                            ValidIssuer = jwtSettings.Issuer,
+                            ValidAudience = jwtSettings.Audience,
+
+                            IssuerSigningKey =
+                                new SymmetricSecurityKey(
+                                    Encoding.UTF8.GetBytes(
+                                        jwtSettings.SecretKey))
+                        };
+                });
+
+
+
             // Register Repositories
             builder.Services.AddScoped<IUserRepository, UserRepository>();
 
             // Register Services
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IJwtService, JwtService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
 
 
             var app = builder.Build();
@@ -49,6 +89,7 @@ namespace BaseApi
             // Middleware pipeline
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();

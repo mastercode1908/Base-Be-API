@@ -1,4 +1,4 @@
-﻿namespace BaseApi.Models
+namespace BaseApi.Models
 {
     public class User
     {
@@ -7,7 +7,7 @@
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; }
-        public bool IsActive { get; set; } = false;
+        public bool IsActive { get; set; } = true;
     }
 }
 

@@ -1,12 +1,15 @@
-﻿using BaseApi.Common;
+using BaseApi.Common;
 using BaseApi.DTOs.Requests;
 using BaseApi.DTOs.Response;
 using BaseApi.Models;
 using BaseApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace BaseApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -20,6 +23,7 @@ namespace BaseApi.Controllers
 
         // GET: api/users
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _userService.GetAllAsync();
@@ -40,6 +44,7 @@ namespace BaseApi.Controllers
 
         // GET: api/users/1
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _userService.GetByIdAsync(id);
@@ -67,6 +72,7 @@ namespace BaseApi.Controllers
 
         // POST: api/users
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Create(CreateUserRequest request)
         {
             var existingUser = await _userService.GetByEmailAsync(request.Email);
@@ -82,7 +88,8 @@ namespace BaseApi.Controllers
                 FullName = request.FullName,
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = request.Role
+                Role = request.Role,
+                IsActive = true
             };
 
             var createdUser = await _userService.CreateAsync(user);
@@ -150,6 +157,7 @@ namespace BaseApi.Controllers
 
         // DELETE: api/users/1
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _userService.DeleteAsync(id);
